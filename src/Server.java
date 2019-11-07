@@ -1,16 +1,55 @@
 import org.json.JSONException;
-import org.json.JSONObject;
+        import org.json.JSONObject;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.sql.*;
+        import java.io.*;
+        import java.net.ServerSocket;
+        import java.net.Socket;
+        import java.sql.*;
 
 public class Server {
     public static void main(String[] args) throws IOException {
+
+
         method();
 
     }
+    public static String login(JSONObject root) throws SQLException, ClassNotFoundException {
+        String id=root.getString("id");
+        String account=root.getString("account");
+        String password=root.getString("password");
+        String tableName="";
+
+        if(id.equals("stu")){
+            tableName="studentpassword";
+        }
+        if(id.equals("tea")){
+            tableName="teacherpassword";
+        }
+        if(id.equals("admin")){
+            tableName="adminpassword";
+        }
+        String sql="select username,password from "+tableName;
+        Connection connection=CONN();
+        Statement statement=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+        ResultSet resultSet=statement.executeQuery(sql);
+        while (resultSet.next()){
+            if(resultSet.getString("username").equals(account)){
+                if(resultSet.getString("password").equals(password)){
+                    return "OK";
+
+                }else {
+                    return "Failed";
+
+                }
+            }else {
+                return "Failed";
+
+            }
+        }
+        return "Failed";
+
+    }
+
     public static void method() throws IOException{
         //  1.创建一个服务器对ServerSocket对象和指定的端口号要一致.
         ServerSocket serverSocket=new ServerSocket(8888);
@@ -36,39 +75,8 @@ public class Server {
 
                     JSONObject root=new JSONObject(message);
                     String operator=root.getString("operator");
-                    String id=root.getString("id");
-                    String account=root.getString("account");
-                    String password=root.getString("password");
-                    String tableName="";
-                    if(operator.equals("login")) {
-                        if(id.equals("stu")){
-                            tableName="studentpassword";
-                        }
-                        if(id.equals("tea")){
-                            tableName="teacherpassword";
-                        }
-                        if(id.equals("admin")){
-                            tableName="adminpassword";
-                        }
-                    }
-
-                    String sql="select username,password from "+tableName;
-                    Connection connection=CONN();
-                    Statement statement=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-                    ResultSet resultSet=statement.executeQuery(sql);
-                    while (resultSet.next()){
-                        if(resultSet.getString("username").equals(account)){
-                            if(resultSet.getString("password").equals(password)){
-                                os.write("OK".getBytes());
-                                break;
-                            }else {
-                                os.write("Failed".getBytes());
-                                break;
-                            }
-                        }else {
-                            os.write("Failed".getBytes());
-                            break;
-                        }
+                    if(operator.equals("login")){
+                        os.write(login(root).getBytes());
                     }
 
 
@@ -93,8 +101,8 @@ public class Server {
 //                        }
 //                    }
 //
-                   is.close();
-                   os.close();
+                    is.close();
+                    os.close();
 
                     socket.close();
 
