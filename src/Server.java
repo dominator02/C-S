@@ -5,6 +5,8 @@ import org.json.JSONException;
         import java.net.ServerSocket;
         import java.net.Socket;
         import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Server {
     public static void main(String[] args) throws IOException {
@@ -77,6 +79,12 @@ public class Server {
                     String operator=root.getString("operator");
                     if(operator.equals("login")){
                         os.write(login(root).getBytes());
+                    }//判断是否登录成功
+                    else if(operator.equals("search"))
+                    {
+                        ListTest listTest = ReplySearch();
+                        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                        out.writeObject(listTest);
                     }
 
 
@@ -106,17 +114,24 @@ public class Server {
 
                     socket.close();
 
-                }catch (IOException | JSONException e){
-                    e.printStackTrace();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                } catch (Exception e){
                     e.printStackTrace();
                 }
             }).start();
 
         }
     }
+
+    /**
+     *
+     * @return
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     */
     public static Connection CONN() throws ClassNotFoundException, SQLException {
         final String URL = "jdbc:mysql://116.62.5.153:3306";
         final String USER = "root";
@@ -124,6 +139,37 @@ public class Server {
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection conn = DriverManager.getConnection("jdbc:mysql://116.62.5.153:3306/results?useSSL=false&serverTimezone=UTC",USER,PASSWORD);
         return conn;
+
+    }
+    /**
+     *
+     * @return ListTest
+     * @throws Exception
+     */
+    public static ListTest ReplySearch() throws Exception//教师搜索
+    {
+        String tableName="result";
+        String sql="select name,Math,Chinese,English from "+tableName;
+        Connection connection=CONN();
+        Statement statement=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+        ResultSet resultSet=statement.executeQuery(sql);
+        ListTest transferPackage=new ListTest();
+        List<Results> tempTransfer=new ArrayList<Results>();
+        while(resultSet.next())
+        {
+            Results temp=new Results();
+
+            temp.setId(resultSet.getInt("id"));
+            temp.setName(resultSet.getString("name"));
+            temp.setMath(resultSet.getInt("Math"));
+            temp.setChinese(resultSet.getInt("Chinese"));
+            temp.setEnglish(resultSet.getInt("English"));
+
+            tempTransfer.add(temp);
+
+        }
+        transferPackage.setList(tempTransfer);
+        return transferPackage;
 
     }
 
